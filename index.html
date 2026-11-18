@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tremendo Arcade Beta</title>
+<meta name="theme-color" content="#17120f">
+<meta name="robots" content="noindex">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Arcade Beta">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link href="vendor/fonts.css" rel="stylesheet">
+<style>
+html,body{height:100%;margin:0;background:#17120f;color:#f4ead6;font-family:'Barlow','Segoe UI',Roboto,Arial,sans-serif}
+.lk{min-height:100%;display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box}
+.lk form{width:100%;max-width:360px;background:linear-gradient(180deg,#2b2140 0%,#6a3a3e 45%,#c8673a 85%,#e9a04f 100%);border:3px solid #7a5530;border-radius:16px;padding:26px 20px;box-shadow:0 0 0 6px #17120f,0 0 0 8px #3a2a1c,0 10px 30px rgba(0,0,0,.45);text-align:center;display:flex;flex-direction:column;gap:12px}
+.lk h1{font-family:'Rye',Georgia,serif;font-weight:400;font-size:34px;line-height:1.05;margin:0;text-shadow:0 2px 0 #3a1f12}
+.lk h1 span{color:#ffd28a}
+.lk p{margin:0;color:#fbe6c6;text-shadow:0 1px 2px rgba(0,0,0,.5)}
+.lk input{font:inherit;font-size:18px;padding:12px;border-radius:10px;border:2px solid #4e3b2c;background:#17120f;color:#f4ead6;text-align:center}
+.lk button{font:inherit;font-weight:700;font-size:18px;padding:12px;border-radius:10px;border:0;background:#ec8a3a;color:#1b120c;cursor:pointer;min-height:48px}
+.lk button:disabled{opacity:.6}
+.lk .err{color:#ffe0c0;font-weight:600;min-height:1.3em}
+</style>
+</head>
+<body>
+<div class="lk" id="lk" hidden>
+  <form id="lkf" autocomplete="off">
+    <h1>Tremendo <span>Arcade</span></h1>
+    <p>Beta test. Enter the password Karl gave you.</p>
+    <input id="lkp" type="password" autocomplete="current-password" aria-label="Password" placeholder="Password" required>
+    <button id="lkb" type="submit">Open the arcade</button>
+    <p class="err" id="lke" role="alert"></p>
+  </form>
+</div>
+<script>
+(() => {
+  const CFG = {"salt": "9LB/wiUttDpPvxiN0Z29Aw==", "iter": 250000, "enc": ["beta.js", "cards.js", "classics.js", "fx.js", "games10.js", "games11.js", "games12.js", "games13.js", "games14.js", "games15.js", "games16.js", "games17.js", "games18.js", "games19.js", "games2.js", "games20.js", "games21.js", "games22.js", "games23.js", "games24.js", "games25.js", "games26.js", "games3.js", "games4.js", "games5.js", "games6.js", "games7.js", "games8.js", "games9.js", "highkeep.js", "holdthekeep.js", "lakeward.js", "siege.js", "sweetswap.js", "trivia_bank.js", "trivia_news.js", "words5.js"], "v": "locked-20261117-170713"};
+  const b64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+  const enc64 = u => btoa(String.fromCharCode(...new Uint8Array(u)));
+  const KEY = 'arcade.lock.key.' + CFG.salt.slice(0, 8);
+  const $ = id => document.getElementById(id);
+  async function derive(pw) {
+    const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(pw), 'PBKDF2', false, ['deriveKey']);
+    return crypto.subtle.deriveKey({ name: 'PBKDF2', salt: b64(CFG.salt), iterations: CFG.iter, hash: 'SHA-256' }, base, { name: 'AES-GCM', length: 256 }, true, ['decrypt']);
+  }
+  async function open(key, path) {
+    const r = await fetch(path, { cache: 'no-cache' });
+    if (!r.ok) throw new Error('missing ' + path);
+    const buf = new Uint8Array(await r.arrayBuffer());
+    return new TextDecoder().decode(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: buf.slice(0, 12) }, key, buf.slice(12)));
+  }
+  async function start(key) {
+    const app = await open(key, 'app.html.enc');               /* a wrong key fails here */
+    const names = new Set(CFG.enc), urls = {};
+    const want = [...app.matchAll(/<script src="([^"]+)"><\/script>/g)].map(m => m[1]).filter(s => names.has(s));
+    await Promise.all(want.map(async s => { urls[s] = URL.createObjectURL(new Blob([await open(key, s + '.enc')], { type: 'text/javascript' })); }));
+    const html = app.replace(/<script src="([^"]+)"><\/script>/g, (m, s) => urls[s] ? `<script src="${urls[s]}"><\/script>` : m);
+    document.open(); document.write(html); document.close();
+  }
+  const show = msg => { $('lk').hidden = false; $('lke').textContent = msg || ''; $('lkb').disabled = false; $('lkb').textContent = 'Open the arcade'; setTimeout(() => $('lkp').focus(), 50); };
+  $('lkf').addEventListener('submit', async e => {
+    e.preventDefault();
+    const pw = $('lkp').value; if (!pw) return;
+    $('lkb').disabled = true; $('lkb').textContent = 'Opening…'; $('lke').textContent = '';
+    let key;
+    try { key = await derive(pw); await open(key, 'app.html.enc'); }
+    catch (err) { return show(/missing|fetch|network/i.test(String(err)) ? 'Couldn’t load the arcade. Check your connection and try again.' : 'That’s not it. Ask Karl for the password.'); }
+    try { localStorage.setItem(KEY, enc64(await crypto.subtle.exportKey('raw', key))); } catch (e2) {}
+    try { await start(key); } catch (err) { show('Couldn’t load the arcade. Check your connection and try again.'); }
+  });
+  (async () => {
+    let saved = null; try { saved = localStorage.getItem(KEY); } catch (e) {}
+    if (!saved) return show();
+    try { await start(await crypto.subtle.importKey('raw', b64(saved), { name: 'AES-GCM' }, false, ['decrypt'])); }
+    catch (err) { try { localStorage.removeItem(KEY); } catch (e) {} show(/OperationError/.test(String(err && err.name)) ? 'The password changed. Ask Karl for the new one.' : ''); }
+  })();
+})();
+</script>
+</body>
+</html>
