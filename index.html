@@ -38,7 +38,7 @@ html,body{height:100%;margin:0;background:#17120f;color:#f4ead6;font-family:'Bar
 </div>
 <script>
 (() => {
-  const CFG = {"salt": "/LvW7g5WkbqVhNgJFQMobw==", "iter": 250000, "enc": ["beta.js", "cards.js", "classics.js", "duel.js", "fx.js", "games10.js", "games11.js", "games12.js", "games13.js", "games14.js", "games15.js", "games16.js", "games17.js", "games18.js", "games19.js", "games2.js", "games20.js", "games21.js", "games22.js", "games23.js", "games24.js", "games25.js", "games26.js", "games27.js", "games28.js", "games29.js", "games3.js", "games4.js", "games5.js", "games6.js", "games7.js", "games8.js", "games9.js", "highkeep.js", "holdthekeep.js", "lakeward.js", "net.js", "siege.js", "sweetswap.js", "trivia_bank.js", "trivia_news.js", "words5.js"], "v": "locked-20261118-105754"};
+  const CFG = {"salt": "/LvW7g5WkbqVhNgJFQMobw==", "iter": 250000, "enc": ["beta.js", "cards.js", "classics.js", "duel.js", "fx.js", "games10.js", "games11.js", "games12.js", "games13.js", "games14.js", "games15.js", "games16.js", "games17.js", "games18.js", "games19.js", "games2.js", "games20.js", "games21.js", "games22.js", "games23.js", "games24.js", "games25.js", "games26.js", "games27.js", "games28.js", "games29.js", "games3.js", "games4.js", "games5.js", "games6.js", "games7.js", "games8.js", "games9.js", "highkeep.js", "holdthekeep.js", "lakeward.js", "net.js", "siege.js", "sweetswap.js", "trivia_bank.js", "trivia_news.js", "words5.js"], "v": "locked-20261119-125900"};
   const b64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
   const enc64 = u => btoa(String.fromCharCode(...new Uint8Array(u)));
   const KEY = 'arcade.lock.key.' + CFG.salt.slice(0, 8);
@@ -59,6 +59,17 @@ html,body{height:100%;margin:0;background:#17120f;color:#f4ead6;font-family:'Bar
     const want = [...app.matchAll(/<script src="([^"]+)"><\/script>/g)].map(m => m[1]).filter(s => names.has(s));
     await Promise.all(want.map(async s => { urls[s] = URL.createObjectURL(new Blob([await open(key, s + '.enc')], { type: 'text/javascript' })); }));
     const html = app.replace(/<script src="([^"]+)"><\/script>/g, (m, s) => urls[s] ? `<script src="${urls[s]}"><\/script>` : m);
+    /* scripts a game adds later (trivia bank, current events, word list) only exist as .enc files:
+       point their src at a decrypted copy, made on first use; a failed load fires the script's error event */
+    const later = {};
+    const lazy = n => later[n] || (later[n] = open(key, n + '.enc').then(t => URL.createObjectURL(new Blob([t], { type: 'text/javascript' }))).catch(e => { delete later[n]; throw e; }));
+    const d = Object.getOwnPropertyDescriptor(HTMLScriptElement.prototype, 'src');
+    Object.defineProperty(HTMLScriptElement.prototype, 'src', { configurable: true, enumerable: d.enumerable, get() { return d.get.call(this); }, set(v) {
+      const n = String(v).split(/[?#]/)[0].replace(/^\.\//, '');
+      if (!names.has(n) || urls[n]) return d.set.call(this, urls[n] || v);
+      const el = this;
+      lazy(n).then(u => d.set.call(el, u), () => el.dispatchEvent(new Event('error')));
+    } });
     document.open(); document.write(html); document.close();
   }
   const show = msg => { $('lk').hidden = false; $('lke').textContent = msg || ''; $('lkb').disabled = false; $('lkb').textContent = 'Open the arcade'; setTimeout(() => $('lkp').focus(), 50); };
