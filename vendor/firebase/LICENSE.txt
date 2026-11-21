@@ -1,0 +1,4 @@
+Firebase JavaScript SDK 10.14.1 (npm package "firebase"), the three compat bundles the arcade uses:
+firebase-app-compat.js, firebase-auth-compat.js, firebase-firestore-compat.js.
+Copyright Google LLC. Licensed under the Apache License, Version 2.0: https://www.apache.org/licenses/LICENSE-2.0
+Served from the arcade's own site so content blockers that stop www.gstatic.com don't break online play.
