@@ -38,7 +38,7 @@ html,body{height:100%;margin:0;background:#17120f;color:#f4ead6;font-family:'Bar
 </div>
 <script>
 (() => {
-  const CFG = {"salt": "/LvW7g5WkbqVhNgJFQMobw==", "iter": 250000, "enc": ["beta.js", "cards.js", "classics.js", "duel.js", "flagship.js", "fx.js", "games10.js", "games11.js", "games12.js", "games13.js", "games14.js", "games15.js", "games16.js", "games17.js", "games18.js", "games19.js", "games2.js", "games20.js", "games21.js", "games22.js", "games23.js", "games24.js", "games25.js", "games26.js", "games27.js", "games28.js", "games29.js", "games3.js", "games4.js", "games5.js", "games6.js", "games7.js", "games8.js", "games9.js", "highkeep.js", "holdthekeep.js", "lakeward.js", "meta.js", "net.js", "siege.js", "sweetswap.js", "trivia_bank.js", "trivia_news.js", "words5.js"], "v": "locked-20261121-173445"};
+  const CFG = {"salt": "/LvW7g5WkbqVhNgJFQMobw==", "iter": 250000, "enc": ["beta.js", "cards.js", "classics.js", "duel.js", "flagship.js", "fx.js", "games10.js", "games11.js", "games12.js", "games13.js", "games14.js", "games15.js", "games16.js", "games17.js", "games18.js", "games19.js", "games2.js", "games20.js", "games21.js", "games22.js", "games23.js", "games24.js", "games25.js", "games26.js", "games27.js", "games28.js", "games29.js", "games3.js", "games4.js", "games5.js", "games6.js", "games7.js", "games8.js", "games9.js", "highkeep.js", "holdthekeep.js", "lakeward.js", "meta.js", "net.js", "siege.js", "sweetswap.js", "trivia_bank.js", "trivia_news.js", "words5.js"], "v": "locked-20261121-175904"};
   const b64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
   const enc64 = u => btoa(String.fromCharCode(...new Uint8Array(u)));
   const KEY = 'arcade.lock.key.' + CFG.salt.slice(0, 8);
